@@ -1,0 +1,253 @@
+mode: eval # (train / eval / test)
+experiment_path: "./experiments/baselines/intentqa"
+
+# Path to the secret environment variables (e.g. API keys)
+secret_env: "./.env"
+
+# Setup of the logger
+logger:
+  # CRITICAL = 50, ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
+  level: 10
+  format: "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
+
+# Specify the directory of the videos
+videos_path: "./data/intentqa/videos"
+
+# Specify the directory of the tasks (questions and options)
+tasks_path: "./data/intentqa/test.csv"
+
+# Specify the directory of the answers (i.e. the ground truths)
+answers_path: "./data/intentqa/test.csv"
+
+# Specify the directory of a previous experiment to go on with the inferences
+# (if null, start from scratch)
+resume_path: null
+
+# Specify the sample rate to be used to load the videos (in fps)
+sample_rate: 1.0
+
+# random seed
+random_seed: 42
+reset_seed_for_each_function: true
+reset_seed_for_each_video: true
+
+controller:
+  max_iterations: 1
+
+state:
+  spatial_clip_state:
+    use_action_captions: false
+    use_action_captions_summary: true
+    use_object_detections: false
+    use_object_detections_summary: false
+  temporal_clip_state:
+    use_foreground: false
+    use_relevance: false
+    use_salience: false
+    use_temporal_grounding_summary: false
+  lexical_representation: "unformatted"
+
+operations:
+  split:
+    class: "Split"
+    params:
+      num_splits: 1
+  wait:
+    class: "Wait"
+    params: { }
+  merge:
+    class: "Merge"
+    params: { }
+
+  derive_clip_states:
+    class: "DeriveClipStates"
+    params:
+      derive_action_captions: true
+      derive_action_captions_summary: true
+      total_num_words_action_captions_summary: 500
+      min_num_words_action_captions_summary: 20
+      derive_object_detections: false
+      derive_object_detections_summary: false
+      total_num_words_object_detections_summary: 500
+      min_num_words_object_detections_summary: 20
+      derive_temporal_grounding: false
+      derive_temporal_grounding_summary: false
+      total_num_words_temporal_grounding_summary: 500
+      min_num_words_temporal_grounding_summary: 20
+      normalization_video_length: -1
+
+  derive_root_clip_state:
+    class: "DeriveRootClipState"
+    params:
+      derive_action_captions: true
+      derive_action_captions_summary: false
+      num_words_action_captions_summary: 500
+      min_num_words_action_captions_summary: 20
+      derive_object_detections: false
+      derive_object_detections_summary: false
+      num_words_object_detections_summary: 500
+      min_num_words_object_detections_summary: 20
+      derive_temporal_grounding: false
+      derive_temporal_grounding_summary: false
+      num_words_temporal_grounding_summary: 500
+      min_num_words_temporal_grounding_summary: 20
+      normalization_video_length: -1
+
+  ratings:
+    class: "NoRatings"
+    params: { }
+
+  decision:
+    class: "NoDecision"
+    params: { }
+
+  conclusion:
+    class: "OptionsCandidateBasedOnConcatenatedLexicalStates"
+    params:
+      # since LLoVi only experimented with raw captions on the llama-family models, we merge their prompts
+      # A) we use the prompt that LLoVi uses for QA with ChatGPT with the summary as input
+      # B) we adopt the prompt in the "choices" section such that "A" becomes "(A)" etc. following their methodology for QA with llama models
+      # (therefore, we also use the completion start as anchor)
+      prompt: "Please provide a single-letter answer (A, B, C, D, E) to the following multiple-choice question, and 
+your answer must be one of the letters (A, B, C, D, or E). You must not provide any other response or explanation. You 
+are given some language descriptions of a first person view video. The video is {whole_video_length_sec} seconds long. 
+Here are the descriptions: {whole_video_state}.\n You are going to answer a multiple choice question based on the 
+descriptions, and your answer should be a single letter chosen from the choices.\n 
+Here is the question: {question}.\n Here are the choices:\n 
+(A): {option_0}\n 
+(B): {option_1}\n 
+(C): {option_2}\n 
+(D): {option_3}\n 
+(E): {option_4}\n"
+      # use same completion start like LLoVI does for llama2
+      completion_start: "The most correct answer is ("
+      max_new_tokens: 1024
+      # parse the first character of the completion as the answer, similar to LLoVi
+      parse_strategy: "naive"
+      # do not replace "c" with "the camera wearer" as LLoVi
+      replace_c: false
+
+api:
+  load_models_only_when_needed: true
+
+  # this function is not used in LLoVi-like setup
+  get_object_detections_from_video_clip_and_text:
+    config_file: "./toolbox/GroundingDINO/groundingdino/config/GroundingDINO_SwinB_cfg.py"
+    checkpoint: "./toolbox/GroundingDINO/weights/groundingdino_swinb_cogcoor.pth"
+    box_threshold: 0.0
+    text_threshold: 0.0
+    cuda: true
+
+  # this function is not used in LLoVi-like setup
+  get_unspecific_objects_from_video_clip:
+    frame_prompt: "You are given an image. Your task is to identify the two main objects in the image. 
+Only identify the objects that are clearly visible in the image and unambiguously recognizable. 
+Do not speculate about objects that are not clearly visible. 
+Find short and precise names for the objects and avoid paraphrasing them. 
+Provide an enumerated list with the two main objects you can clearly identify in the image. 
+\nList of objects:\n"
+    model_id: "THUDM/cogagent-vqa-hf"
+    tokenizer_id: "lmsys/vicuna-7b-v1.5"
+    device: "cuda"
+    precision: "torch.float16"
+    quantization: false
+    max_new_tokens: 512
+    do_sample: false
+    temperature: 0.0
+
+  # this function is not used in LLoVi-like setup
+  get_specific_objects_from_video_clip:
+    # leverages get_completion_from_text API function
+    # leverages get_object_detections_from_video_clip_and_text API function
+    prompt_template: "Given:
+\n- a question about a video: {question}
+\n- answer option 0: {option_0}
+\n- answer option 1: {option_1}
+\n- answer option 2: {option_2}
+\n- answer option 3: {option_3}
+\n- answer option 4: {option_4}
+\n\nTask:
+\nI want to identify objects based on that question and its answer options that should be given special attention while watching the video.
+\nThese specific objects should be detectable by an object detection model.
+\nPlease provide an enumerated list of these objects without any speculation about the video content.
+\nMake sure that each item of the list only contains the name of the object.
+\nDo not provide general categories or descriptions.
+\nDo not provide any additional information, explanations or examples.
+\n\n"
+    completion_start: "Terms of objects:\n"
+    max_new_tokens: 512
+    temperature: null
+
+  get_action_captions_from_video_clip:
+    # use the exact same captions as LLoVi (provided in their repository, see https://github.com/CeeZh/LLoVi/tree/main)
+    # (please note that we use the caption each second and not every 2 seconds since we want to compare to their main contribution,
+    # i.e. the summarization and qa afterward)
+    pre_inferred_action_captions_path: "./perceptive_data/action_captions_nextqa_llava1.5_fps1_llovi.json"
+    # the following parameters will be ignored since we use the pre-inferred action captions
+    model_name: "LaViLa"
+    modelzoo_dir_path: "./toolbox/lavila_video_captioner/modelzoo"
+    checkpoint_download_url: "https://dl.fbaipublicfiles.com/lavila/checkpoints/narrator"
+    checkpoint: "ckpt_base.pt"
+    resample_rate: 4.0
+    interval_in_seconds: 1
+    temperature: 0.7
+    top_p: 0.95
+    max_new_tokens: 256
+    num_return_sequences: 5
+    early_stopping: true
+    num_seg: 4
+    cuda: true
+
+  # this function is not used in LLoVi-like setup
+  get_temporal_grounding_from_video_clip_and_text:
+    config_dir: "./toolbox/UniVTG/tmp"
+    checkpoint: "./toolbox/UniVTG/results/omni/finetuned/model_best.ckpt"
+    clip_model_version: "ViT-B/32"
+    output_feat_size: 512
+    half_precision: false
+    jit: false
+    resize: 224
+    gpu_id: 0
+
+  get_summary_from_noisy_perceptive_data:
+    # we can use nextqa summaries since they share same videos
+    pre_inferred_summaries_path: "./perceptive_data/summaries_intentqa_llama3_llovi_sumqa_baseline.json"
+    # use the same prompt for summarization as LLoVi uses
+    # not that LLoVi did not run sum + qa experiments with llama-family models, so we use the prompt that LLoVi only
+    # used for ChatGPT here
+    action_caption_prompt_template: "You are given some language descriptions of a first person view video. 
+The video is 180 seconds long. Each sentence describes a 1.0s clip. The descriptions are sequential and non-overlapping 
+which cover the whole video exactly. Here are the descriptions: {interval_text}.\n Please give me a 500 words summary. 
+When doing summarization, remember that your summary will be used to answer this multiple choice question: {question}"
+    # to the best of our knowledge LLoVI does not use a completion start for the summarization task
+    action_caption_completion_start: ""
+    # LLoVi does not use object detections
+    object_detection_prompt_template: ""
+    object_detection_completion_start: ""
+    # LLoVi does not use temporal grounding
+    temporal_grounding_prompt_template: ""
+    temporal_grounding_completion_start: ""
+    max_new_tokens: 4096
+    # try 0.0 temperature, maybe it improves
+    temperature: 0.0
+    no_recursion: false
+    # something big so all data is put in the same chunk --> like LLoVi
+    interval_span: 10000
+    remove_linebreaks: false
+    # do not replace "c" with "the camera wearer" as LLoVi
+    replace_c: false
+
+  get_completion_from_text:
+    # compare https://huggingface.co/blog/llama3#how-to-prompt-llama-3
+    llm_class: "HuggingFaceLLM"
+    llm_name: "meta-llama/Meta-Llama-3-8B-Instruct"
+    # best should be torch.bfloat16
+    precision: 15
+    do_sample: false
+    temperature: 0.0
+    top_p: 0.9
+    max_new_tokens: 1024
+    repetition_penalty: 1.2
+    use_cache: true
+    # use the same system prompt as LLoVi
+    system_prompt: "You are a helpful expert in first person view video analysis."

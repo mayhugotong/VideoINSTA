@@ -1,0 +1,373 @@
+# ABLATION: no DPCKNN
+
+mode: eval # (train / eval / test)
+experiment_path: "./experiments/ablation/nextqa"
+
+# Path to the secret environment variables (e.g. API keys)
+secret_env: "./.env"
+
+
+# Setup of the logger
+logger:
+  # CRITICAL = 50, ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
+  level: 10
+  format: "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
+
+# Specify the directory of the videos
+videos_path: "./data/nextqa/NExTVideo"
+
+# Specify the directory of the tasks (questions and options)
+tasks_path: "./data/nextqa/val.csv"
+
+# Specify the directory of the answers (i.e. the ground truths)
+answers_path: "./data/nextqa/val.csv"
+
+# Specify the directory of a previous experiment to go on with the inferences
+# (if null, start from scratch)
+resume_path: null
+
+# ablation subset (50 new tasks of NextQA val set, sampled using random seed 42, compare sample_subset_indices.py)
+subset_indices: [56, 210, 226, 256, 275, 373, 666, 736, 789, 798, 825, 876, 878, 954, 1067, 1191, 1326, 1361, 1685, 1826, 1859, 1873, 1897, 1977, 2081, 2244, 2340, 2363, 2365, 2489, 2853, 2884, 2914, 3041, 3063, 3207, 3219, 3552, 3572, 3578, 3799, 3885, 4264, 4525, 4601, 4604, 4661, 4737, 4975, 4986]
+
+
+# Specify the sample rate to be used to load the videos (in fps)
+sample_rate: 1.0
+
+
+# random seed
+random_seed: 42
+reset_seed_for_each_function: true
+reset_seed_for_each_video: true
+
+
+# Setup of the VideoINSTA controller
+controller:
+  max_iterations: 1
+
+
+# Specify the params of the state
+# as discussed on 06.05.2024, we summarize each data type separately with the question --> denoising
+state:
+  spatial_clip_state:
+    use_action_captions: false
+    use_action_captions_summary: true
+    use_object_detections: false
+    use_object_detections_summary: true
+  temporal_clip_state:
+    # only use relevance for temporal grounding since the others lead to performance decrease
+    use_foreground: false
+    use_relevance: true
+    use_salience: false
+    use_temporal_grounding_summary: false
+  lexical_representation: "sections" # choose between "sections" and "list"
+
+# Specify the params of the operations that have params
+operations:
+  # Specify the number of splits for the initial root split
+  split:
+    class: "Split"
+    params:
+      num_splits: 4
+  wait:
+    class: "Wait"
+    params: { }
+  merge:
+    class: "Merge"
+    params: { }
+
+  derive_clip_states:
+    class: "DeriveClipStates"
+    params:
+      derive_action_captions: true
+      derive_action_captions_summary: true
+      total_num_words_action_captions_summary: 500
+      min_num_words_action_captions_summary: 20
+      derive_object_detections: true
+      derive_object_detections_summary: true
+      total_num_words_object_detections_summary: 500
+      min_num_words_object_detections_summary: 20
+      derive_temporal_grounding: true
+      derive_temporal_grounding_summary: false
+      total_num_words_temporal_grounding_summary: 500
+      min_num_words_temporal_grounding_summary: 20
+      # -1 means that we do not normalize, we just take the total number of words as contingent for the video,
+      # no matter how long the video is (e.g. for 4-second videos as well as for 180-second videos)
+      normalization_video_length: -1
+
+  derive_root_clip_state:
+    class: "DeriveRootClipState"
+    params:
+      derive_action_captions: true
+      derive_action_captions_summary: false
+      num_words_action_captions_summary: 500
+      min_num_words_action_captions_summary: 20
+      derive_object_detections: true
+      derive_object_detections_summary: false
+      num_words_object_detections_summary: 500
+      min_num_words_object_detections_summary: 20
+      derive_temporal_grounding: true
+      derive_temporal_grounding_summary: false
+      num_words_temporal_grounding_summary: 500
+      min_num_words_temporal_grounding_summary: 20
+      # -1 means that we do not normalize, we just take the total number of words as contingent for the video,
+      # no matter how long the video is (e.g. for 4-second videos as well as for 180-second videos)
+      normalization_video_length: -1
+
+  ratings:
+    class: "AnswerabilityRating"
+    params:
+      prompt: "# Video Question Answering
+\n\nHi there! Now that you have studied the topic of video question answering for years, you find yourself in the final 
+exam of your studies. Please take your time to solve this task. You can do it! You know everything that is required to 
+master it. Good luck!
+\n\n## What is Video Question Answering?
+\n\nVideo Question Answering is a task that requires reasoning about the content of a video to answer a question about it. 
+In this exam, you will be given purely textual information about a single clip of the video that has been extracted beforehand. 
+Your task is to read the information about the clip carefully and evaluate whether the given clip is needed to answer the 
+question about the video or not.
+\n\n## Here is your task
+\n\nPlease think step by step to evaluate the answerability of the given question and options based on the given clip. 
+The question is a single choice question with five answer options, such that there is exactly one best answer option. 
+Is the information in the given clip sufficient to answer the given question with one of the given options? 
+Please make sure to include all relevant information in your evaluation.
+\n\nPlease use the following criteria for evaluation:
+\n    1. Irrelevant information {{'answerability': 1}}: If information of this clip is not even relevant to the question.
+\n    2. Insufficient information {{'answerability': 2}}: If information of this clip is potentially useful to answer the 
+question, but more clips are needed to confidently answer the question.
+\n    3. Sufficient information {{'answerability': 3}}: If the information of this clip is sufficient to answer the 
+question and no other clip is needed.
+\n\nPlease write your answerability X in JSON format {{'answerability': X}}, where X is in {{1, 2, 3}}.
+\n\n## Here is the information about the video clip
+\n\n### Information about one of four clips of the video
+\n{lexical_clip_state_representation}
+\n\n### Question
+\n\n{question}
+\n\n### Five answer options
+\n\n    A) {option_0}
+\n    B) {option_1}
+\n    C) {option_2}
+\n    D) {option_3}
+\n    E) {option_4}
+\n\n## Now it is your turn
+\n\nPlease think step by step to provide your evaluation and provide the answerability X in JSON format {{'answerability': X}}, where X is in {{1, 2, 3}}:
+\n\n"
+      completion_start: ""
+      max_new_tokens: 2048
+      temperature: 0.0
+      replace_c: false
+
+  decision:
+    # since we want to stop at iteration=1, do not waste time making decisions
+    class: "NoDecision"
+    params: { }
+
+  # Specify the params of the conclusion
+  conclusion:
+    class: "IterativeMergeConclusion"
+    params:
+      # similar to best qa prompt which leads to 61.6% accuracy in experiment 3 with Chat
+      qa_prompt: "# Video Question Answering
+\n\nHi there! Now that you have studied the topic of video question answering for years, you find yourself in the final 
+exam of your studies. Please take your time to solve this task. You can do it! You know everything that is required to 
+master it. Good luck!
+\n\n## What is Video Question Answering?
+\n\nVideo Question Answering is a task that requires reasoning about the content of a video to answer a question about it. 
+In this exam, you will be given purely textual information about one or more clips of a video that has been extracted beforehand. 
+So your task is to read the information about the video carefully and answer the question about it.
+\n\n## Here is your task
+\n\nBased on the given information about the most relevant clips of the video regarding the question, please 
+select exactly one of the given options as your best answer to the given question. This is a single choice setting, 
+such that there is exactly one best answer option. Think step by step to find the best candidate from the given answer 
+options regarding the given question. Please write the letter of the best answer X in JSON format 
+{{'best_answer': 'X'}}, where X is in {{'A', 'B', 'C', 'D', 'E'}}.
+\n\n## Here is the information about the video
+\n\n### Information about the most relevant clips of the video regarding the question
+\n{whole_video_state}
+\n\n### Question
+\n\n{question}
+\n\n### Five answer options (please select exactly one)
+\n\n    A) {option_0}
+\n    B) {option_1}
+\n    C) {option_2}
+\n    D) {option_3}
+\n    E) {option_4}
+\n\n## Now it is your turn
+\n\nPlease choose the best option now. Think step by step and provide the best answer (friendly reminder: in the requested JSON format {{'best_answer': 'X'}}, where X is in {{'A', 'B', 'C', 'D', 'E'}}):
+\n\n"
+      qa_completion_start: ""
+      qa_max_new_tokens: 2048
+      qa_temperature: 0.0
+      qa_replace_c: false
+      qa_parse_strategy: "json"
+      # adopted and slightly adapted prompt from Video Agent, see https://arxiv.org/abs/2403.11481
+      self_reflect_prompt: "# Assessment of Decision-Making
+\n\nHi there! You are given an exam task and a students answer to the task.
+\nYou are asked to assess the confidence level of the decision-making process in your students answer based on the 
+information provided in the exam task. Imagine you are the teacher of the student and you want to know if you have 
+provided enough information in the task to make a well-informed decision. At the same time, you want to know if the 
+student has made a well-informed decision based on the information provided in the task.
+\n\n## Here is the exam
+\n\n{reasoning_history}
+\n\n## Criteria for Evaluation
+\n\n    1. Insufficient Information {{'confidence': 1}}: If information is too lacking for a reasonable conclusion.
+\n    2. Partial Information {{'confidence': 2}}: If information partially supports an informed guess.
+\n    3. Sufficient Information {{'confidence': 3}}: If information fully supports a well-informed decision.
+\n\n## Assessment Focus
+\nPlease evaluate based on the relevance, completeness, and clarity of the provided information in the task in relation 
+to the decision-making context of the students answer.
+\nPlease provide the confidence in JSON format {{'confidence': X}} where X is in {{1, 2, 3}}.\n\n"
+      self_reflect_completion_start: ""
+      self_reflect_max_new_tokens: 2048
+      self_reflect_temperature: 0.0
+      self_reflect_parse_strategy: "json"
+
+api:
+  load_models_only_when_needed: true
+
+  get_object_detections_from_video_clip_and_text:
+    config_file: "./toolbox/GroundingDINO/groundingdino/config/GroundingDINO_SwinB_cfg.py"
+    checkpoint: "./toolbox/GroundingDINO/weights/groundingdino_swinb_cogcoor.pth"
+    box_threshold: 0.0
+    text_threshold: 0.0
+    cuda: true
+
+  get_unspecific_objects_from_video_clip:
+    pre_inferred_object_detections_path: "./perceptive_data/object_detections_nextqa_cogagent-vqa-hf_0.0_3_objects.json"
+    frame_prompt: "You are given an image. Your task is to identify the three main objects in the image. 
+Only identify the objects that are clearly visible in the image and unambiguously recognizable. 
+Do not speculate about objects that are not clearly visible. 
+Find short and precise names for the objects and avoid paraphrasing them. 
+Provide an enumerated list with the three main objects you can clearly identify in the image. 
+\nList of objects:\n"
+    model_id: "THUDM/cogagent-vqa-hf"
+    tokenizer_id: "lmsys/vicuna-7b-v1.5"
+    device: "cuda"
+    precision: "torch.float16"
+    quantization: false
+    max_new_tokens: 512
+    do_sample: false # greedy
+    temperature: 0.0 # will be ignored since do_sample is false
+    num_objects_per_frame: 3
+
+  get_specific_objects_from_video_clip:
+    # leverages get_completion_from_text API function
+    # leverages get_object_detections_from_video_clip_and_text API function
+    prompt_template: "Given:
+\n- a question about a video: {question}
+\n- answer option 0: {option_0}
+\n- answer option 1: {option_1}
+\n- answer option 2: {option_2}
+\n- answer option 3: {option_3}
+\n- answer option 4: {option_4}
+\n\nTask:
+\nI want to identify objects based on that question and its answer options that should be given special attention while watching the video.
+\nThese specific objects should be detectable by an object detection model.
+\nPlease provide an enumerated list of these objects without any speculation about the video content.
+\nMake sure that each item of the list only contains the name of the object.
+\nDo not provide general categories or descriptions.
+\nDo not provide any additional information, explanations or examples.
+\n\n"
+    completion_start: "Terms of objects:\n"
+    max_new_tokens: 512
+    temperature: null
+    replace_c: false
+
+  get_action_captions_from_video_clip:
+    pre_inferred_action_captions_path: "./perceptive_data/action_captions_nextqa_cogagent-vqa-hf_0.0_10_words_events.json"
+    model_name: "LaViLa"
+    modelzoo_dir_path: "./toolbox/lavila_video_captioner/modelzoo"
+    checkpoint_download_url: "https://dl.fbaipublicfiles.com/lavila/checkpoints/narrator"
+    checkpoint: "ckpt_base.pt" # fair version of LaViLa that has not seen the Egoschema clips
+    resample_rate: 4.0
+    interval_in_seconds: 1
+    # seems to be the best temperature for LaViLa so far,
+    # even leads to better results than using the pre-inferrred action captions from LLoVi
+    temperature: 0.0001 # one of the best in ablation together with 0.1, but this way we have more diversity for sampling
+    top_p: 0.95 # like in LLoVi
+    max_new_tokens: 256 # whatever, just not too small, will be small fraction anyway
+    num_return_sequences: 5 # like in LLoVi
+    early_stopping: true # faster
+    num_seg: 4
+    cuda: true
+
+  get_temporal_grounding_from_video_clip_and_text:
+    config_dir: "./toolbox/UniVTG/tmp"
+    checkpoint: "./toolbox/UniVTG/results/omni/finetuned/model_best.ckpt"
+    clip_model_version: "ViT-B/32"
+    output_feat_size: 512
+    half_precision: false
+    jit: false
+    resize: 224
+    gpu_id: 0
+    top_k_intervals: 2
+
+  get_summary_from_noisy_perceptive_data:
+    # we only have DPCKNN based summaries, so infer them here
+    pre_inferred_summaries_path: null
+    # similar summarization prompt like LLoVi
+    action_caption_prompt_template: "You are given some language descriptions of a first person view video. 
+The video is {length} seconds long. Each sentence describes a 1.0s clip. The descriptions are sequential and non-overlapping 
+which cover the whole video exactly. Here are the descriptions: {interval_text}.\n Please give me a {words} words summary. 
+When doing summarization, remember that your summary will be used to answer this multiple choice question: {question}"
+    action_caption_completion_start: ""
+    object_detection_prompt_template: "You are given a list of the most eye-catching objects that were detected in each 
+frame of a video clip using a visual large language model. The list appears in the temporal order of the frames. The 
+video is {length} seconds long. Each sentence describes the objects of a 1.0s clip. The object detections are 
+sequential and non-overlapping which cover the whole video exactly. Here are the object detections:
+\n\n{interval_text}.
+\n\nPlease give me a {words} words summary of these object detections. When doing summarization, remember that your 
+summary will be used to answer this multiple choice question: {question}"
+    object_detection_completion_start: ""
+    # difference to chat: added instruction for providing a readable summary without special formatting (which llama3 tends to do)
+    temporal_grounding_prompt_template: "# Summarization of temporal data
+\n\nHi there! You are given temporal information of a video. 
+This information has been grounded on a question and five answer options of a video question answering task respectively. 
+This grounding was done by a temporal grounding model. The available information consists of a foreground, 
+relevance and saliency for the question and each option regarding the frame features in a video respectively.
+\n\n## Foreground
+\n\nThe foreground represents the percentage of frames that indicate the foreground of the clip regarding the texts of 
+the question and each option respectively. For example, given the text of the option X, a value of 100% would mean that 
+all frames of the clip are related to the option X and a value of 0% would mean that none of the frames are related to 
+the option X.
+\n\n## Relevance
+\n\nThe relevance represents the percentage of frames that are relevant regarding the texts of the question and each 
+option respectively. For example, given the text of the question, a value of 100% would indicate that all frames of the 
+clip are relevant to the question, while a value of 0% would mean that no frame of the clip is relevant to the question.
+\n\n## Salience
+\n\nThe salience represents the mean percentage of the salience of each frame regarding the texts of the question and 
+each option respectively. For example, given the text of option X, a value close to 100% would mean that almost all 
+frames are very salient regarding option X, while a value close to 0% would mean that almost all frames are not salient 
+regarding option X.
+\n\n## Here are the temporal groundings
+\n\n{interval_text}
+\n\n## Here is the question
+\n\n{question}
+\n\n## Here are the options
+\n\n    A) {option_0}
+\n    B) {option_1}
+\n    C) {option_2}
+\n    D) {option_3}
+\n    E) {option_4}
+\n\n## Now it is your turn
+\n\nPlease give me a 100 words summary of these temporal groundings. Please use the foreground, the relevance and the salience 
+in your summary. Remember that your summary will be used to answer the given multiple choice question.
+\n\n"
+    temporal_grounding_completion_start: ""
+    max_new_tokens: 2048
+    temperature: 1.0
+    no_recursion: false
+    interval_span: 10000
+    remove_linebreaks: false
+    # replace after sum
+    replace_c: false
+
+  get_completion_from_text:
+    llm_class: "OpenAILLM"
+    llm_name: "gpt-3.5-turbo-1106"
+    temperature: 0.0 # the default LLM temperature is 0 for the QA reasoning
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+    max_new_tokens: 4096
+    api_type: "chat"
+    system_prompt: "You are a helpful expert in video analysis."  # like in LLoVi, but more generic
+    use_seed: false # like in LLoVi, let's catch some big fish

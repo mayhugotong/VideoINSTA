@@ -1,0 +1,250 @@
+mode: eval # (train / eval / test)
+experiment_path: "./experiments/Llovi_activitynetqa"
+
+# Path to the secret environment variables (e.g. API keys)
+secret_env: "./.env"
+
+subset_indices: [3, 4, 13, 17, 26, 29, 53, 58, 64, 76, 79, 94, 120, 159, 172, 193, 200, 203, 204, 217, 226, 244, 257, 260, 262, 295, 313, 317, 325, 326, 342, 355, 361, 363, 375, 378, 385, 410, 414, 416, 443, 458, 465, 468, 474, 479, 480, 482, 496, 499, 520, 524, 542, 552, 556, 561, 563, 566, 568, 569, 573, 580, 581, 584, 594, 596, 600, 616, 617, 645, 653, 656, 671, 694, 701, 712, 744, 756, 759, 764, 765, 767, 772, 792, 794, 802, 806, 819, 827, 837, 839, 842, 848, 871, 876, 885, 888, 895, 898, 912, 913, 916, 938, 944, 945, 947, 982, 991, 1020, 1022, 1030, 1042, 1044, 1051, 1071, 1072, 1083, 1085, 1100, 1133, 1143, 1148, 1170, 1207, 1208, 1213, 1221, 1252, 1266, 1268, 1273, 1289, 1292, 1295, 1304, 1307, 1310, 1323, 1331, 1332, 1338, 1348, 1352, 1362, 1390, 1401, 1425, 1450, 1462, 1463, 1469, 1503, 1522, 1555, 1557, 1558, 1559, 1569, 1571, 1575, 1582, 1592, 1614, 1628, 1629, 1631, 1634, 1647, 1667, 1673, 1716, 1720, 1721, 1725, 1728, 1735, 1741, 1746, 1750, 1751, 1755, 1763, 1783, 1791, 1796, 1799, 1804, 1805, 1822, 1826, 1828, 1840, 1864, 1866, 1875, 1876, 1885, 1905, 1907, 1924, 1926, 1936, 1939, 1949, 1955, 1961, 1973, 1990, 1998, 2001, 2005, 2006, 2016, 2020, 2030, 2032, 2036, 2044, 2046, 2057, 2059, 2086, 2136, 2139, 2145, 2152, 2157, 2162, 2166, 2169, 2171, 2172, 2174, 2175, 2185, 2187, 2193, 2211, 2231, 2253, 2266, 2276, 2277, 2278, 2281, 2282, 2286, 2308, 2324, 2334, 2336, 2350, 2370, 2401, 2404, 2422, 2430, 2444, 2452, 2457, 2460, 2465, 2478, 2489, 2500, 2519, 2525, 2533, 2542, 2553, 2569, 2571, 2573, 2577, 2584, 2590, 2591, 2639, 2655, 2656, 2672, 2689, 2704, 2706, 2712, 2721, 2732, 2745, 2757, 2769, 2779, 2786, 2787, 2808, 2817, 2831, 2859, 2864, 2876, 2897, 2902, 2910, 2931, 2940, 2962, 2965, 2973, 2983, 2987, 2988, 3024, 3027, 3032, 3059, 3063, 3100, 3104, 3105, 3108, 3112, 3113, 3126, 3133, 3145, 3152, 3155, 3198, 3241, 3242, 3264, 3268, 3271, 3273, 3274, 3285, 3286, 3296, 3298, 3307, 3326, 3329, 3334, 3345, 3367, 3372, 3377, 3395, 3434, 3436, 3444, 3456, 3458, 3462, 3465, 3466, 3469, 3503, 3509, 3520, 3521, 3531, 3533, 3559, 3561, 3572, 3574, 3588, 3589, 3619, 3622, 3630, 3675, 3679, 3698, 3714, 3716, 3727, 3730, 3745, 3754, 3758, 3763, 3770, 3786, 3789, 3809, 3825, 3834, 3855, 3872, 3874, 3876, 3892, 3893, 3905, 3943, 3976, 3978, 3981, 3986, 4002, 4042, 4049, 4089, 4100, 4119, 4139, 4140, 4144, 4154, 4158, 4160, 4173, 4174, 4187, 4189, 4211, 4222, 4239, 4259, 4282, 4322, 4333, 4334, 4344, 4350, 4363, 4375, 4392, 4393, 4398, 4404, 4410, 4415, 4417, 4418, 4428, 4441, 4450, 4464, 4467, 4469, 4488, 4503, 4508, 4519, 4522, 4526, 4532, 4537, 4541, 4543, 4552, 4562, 4586, 4594, 4597, 4598, 4612, 4630, 4646, 4647, 4662, 4666, 4677, 4715, 4720, 4723, 4729, 4742, 4744, 4751, 4756, 4771, 4780, 4781, 4785, 4788, 4819, 4820, 4827, 4837, 4870, 4874, 4881, 4885, 4887, 4906, 4931, 4945, 4954, 4966, 4969, 4988, 4990, 5007, 5010, 5042, 5066, 5072, 5073, 5084, 5088, 5104, 5122, 5140, 5149, 5159, 5169, 5185, 5195, 5196, 5201, 5207, 5219, 5234, 5238, 5242, 5250, 5255, 5266, 5287, 5293, 5308, 5323, 5342, 5353, 5357, 5363, 5369, 5374, 5385, 5397, 5398, 5404, 5406, 5417, 5422, 5434, 5438, 5441, 5447, 5463, 5471, 5480, 5486, 5487, 5490, 5493, 5502, 5511, 5516, 5531, 5534, 5543, 5548, 5566, 5572, 5574, 5584, 5587, 5599, 5608, 5626, 5631, 5637, 5651, 5660, 5704, 5706, 5711, 5719, 5744, 5745, 5749, 5763, 5771, 5780, 5798, 5806, 5840, 5865, 5867, 5878, 5881, 5884, 5885, 5893, 5895, 5896, 5904, 5915, 5925, 5965, 5968, 5972, 5973, 5977, 5979, 5984, 5995, 6021, 6027, 6028, 6033, 6037, 6067, 6072, 6074, 6078, 6081, 6102, 6119, 6127, 6128, 6139, 6151, 6153, 6159, 6173, 6187, 6191, 6216, 6230, 6241, 6246, 6254, 6273, 6294, 6295, 6296, 6317, 6332, 6335, 6356, 6378, 6390, 6409, 6417, 6423, 6427, 6431, 6436, 6442, 6450, 6488, 6502, 6515, 6521, 6552, 6558, 6571, 6594, 6601, 6606, 6607, 6609, 6611, 6615, 6619, 6630, 6641, 6684, 6689, 6693, 6704, 6721, 6732, 6794, 6813, 6829, 6830, 6833, 6837, 6848, 6894, 6904, 6911, 6931, 6942, 6946, 6952, 6961, 6974, 6985, 6987, 7006, 7012, 7033, 7042, 7050, 7051, 7054, 7056, 7058, 7059, 7060, 7076, 7078, 7080, 7082, 7083, 7098, 7121, 7131, 7137, 7144, 7146, 7163, 7165, 7174, 7179, 7184, 7192, 7193, 7198, 7202, 7216, 7220, 7228, 7234, 7242, 7247, 7248, 7253, 7259, 7288, 7293, 7308, 7354, 7363, 7364, 7368, 7369, 7373, 7382, 7392, 7395, 7404, 7416, 7417, 7439, 7476, 7480, 7491, 7523, 7524, 7531, 7542, 7555, 7556, 7563, 7573, 7580, 7582, 7583, 7588, 7590, 7609, 7610, 7611, 7617, 7625, 7632, 7643, 7645, 7657, 7663, 7665, 7673, 7691, 7694, 7702, 7703, 7713, 7720, 7724, 7741, 7756, 7757, 7773, 7798, 7811, 7813, 7841, 7842, 7862, 7870, 7885, 7900, 7920, 7935, 7938, 7949, 7955, 7961, 7964, 7971, 7977, 7997]
+
+# Setup of the logger
+logger:
+  # CRITICAL = 50, ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
+  level: 10
+  format: "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
+
+# Specify the directory of the videos
+videos_path: "./data/activitynet/test_merged"
+
+# Specify the directory of the tasks (questions and options)
+tasks_path: "./data/activitynet/test_q.json"
+
+# Specify the directory of the answers (i.e. the ground truths)
+answers_path: "./data/activitynet/test_a.json"
+
+# Specify the directory of a previous experiment to go on with the inferences
+# (if null, start from scratch)
+resume_path: null
+
+# Specify the sample rate to be used to load the videos (in fps)
+sample_rate: 1.0
+
+# random seed
+random_seed: 42
+reset_seed_for_each_function: true
+reset_seed_for_each_video: true
+
+controller:
+  max_iterations: 1
+
+state:
+  spatial_clip_state:
+    use_action_captions: false
+    use_action_captions_summary: true
+    use_object_detections: false
+    use_object_detections_summary: false
+  temporal_clip_state:
+    use_foreground: false
+    use_relevance: false
+    use_salience: false
+    use_temporal_grounding_summary: false
+  lexical_representation: "unformatted"
+
+operations:
+  split:
+    class: "Split"
+    params:
+      num_splits: 1
+  wait:
+    class: "Wait"
+    params: { }
+  merge:
+    class: "Merge"
+    params: { }
+
+  derive_clip_states:
+    class: "DeriveClipStates"
+    params:
+      derive_action_captions: true
+      derive_action_captions_summary: true
+      total_num_words_action_captions_summary: 500
+      min_num_words_action_captions_summary: 20
+      derive_object_detections: false
+      derive_object_detections_summary: false
+      total_num_words_object_detections_summary: 500
+      min_num_words_object_detections_summary: 20
+      derive_temporal_grounding: false
+      derive_temporal_grounding_summary: false
+      total_num_words_temporal_grounding_summary: 500
+      min_num_words_temporal_grounding_summary: 20
+      normalization_video_length: -1
+
+  derive_root_clip_state:
+    class: "DeriveRootClipState"
+    params:
+      derive_action_captions: true
+      derive_action_captions_summary: false
+      num_words_action_captions_summary: 500
+      min_num_words_action_captions_summary: 20
+      derive_object_detections: false
+      derive_object_detections_summary: false
+      num_words_object_detections_summary: 500
+      min_num_words_object_detections_summary: 20
+      derive_temporal_grounding: false
+      derive_temporal_grounding_summary: false
+      num_words_temporal_grounding_summary: 500
+      min_num_words_temporal_grounding_summary: 20
+      normalization_video_length: -1
+
+  ratings:
+    class: "NoRatings"
+    params: { }
+
+  decision:
+    class: "NoDecision"
+    params: { }
+
+  conclusion:
+    class: "OptionsCandidateBasedOnConcatenatedLexicalStates"
+    params:
+      # since LLoVi only experimented with raw captions on the llama-family models, we merge their prompts
+      # A) we use the prompt that LLoVi uses for QA with ChatGPT with the summary as input
+      # B) we adopt the prompt in the "choices" section such that "A" becomes "(A)" etc. following their methodology for QA with llama models
+      # (therefore, we also use the completion start as anchor)
+      prompt: "Please provide a free-form answer to the following open-ended question, and 
+your answer must be brief and precise. You must not provide any other response or explanation. You 
+are given some language descriptions of a first person view video. The video is {whole_video_length_sec} seconds long. 
+Here are the descriptions: {whole_video_state}.\n 
+You are going to answer a open-ended question based on the 
+descriptions, and your answer should be a free-form answer.\n"
+      # use same completion start like LLoVI does for llama2
+      completion_start: "The free-form answer is:"
+      max_new_tokens: 1024
+      # parse the first character of the completion as the answer, similar to LLoVi
+      parse_strategy: "naive"
+      # do not replace "c" with "the camera wearer" as LLoVi
+      replace_c: false
+
+api:
+  load_models_only_when_needed: true
+
+  # this function is not used in LLoVi-like setup
+  get_object_detections_from_video_clip_and_text:
+    config_file: "./toolbox/GroundingDINO/groundingdino/config/GroundingDINO_SwinB_cfg.py"
+    checkpoint: "./toolbox/GroundingDINO/weights/groundingdino_swinb_cogcoor.pth"
+    box_threshold: 0.0
+    text_threshold: 0.0
+    cuda: true
+
+  # this function is not used in LLoVi-like setup
+  get_unspecific_objects_from_video_clip:
+    frame_prompt: "You are given an image. Your task is to identify the two main objects in the image. 
+Only identify the objects that are clearly visible in the image and unambiguously recognizable. 
+Do not speculate about objects that are not clearly visible. 
+Find short and precise names for the objects and avoid paraphrasing them. 
+Provide an enumerated list with the two main objects you can clearly identify in the image. 
+\nList of objects:\n"
+    model_id: "THUDM/cogagent-vqa-hf"
+    tokenizer_id: "lmsys/vicuna-7b-v1.5"
+    device: "cuda"
+    precision: "torch.float16"
+    quantization: false
+    max_new_tokens: 512
+    do_sample: false
+    temperature: 0.0
+
+  # this function is not used in LLoVi-like setup
+  get_specific_objects_from_video_clip:
+    # leverages get_completion_from_text API function
+    # leverages get_object_detections_from_video_clip_and_text API function
+    prompt_template: "Given:
+\n- a question about a video: {question}
+\n- answer option 0: {option_0}
+\n- answer option 1: {option_1}
+\n- answer option 2: {option_2}
+\n- answer option 3: {option_3}
+\n- answer option 4: {option_4}
+\n\nTask:
+\nI want to identify objects based on that question and its answer options that should be given special attention while watching the video.
+\nThese specific objects should be detectable by an object detection model.
+\nPlease provide an enumerated list of these objects without any speculation about the video content.
+\nMake sure that each item of the list only contains the name of the object.
+\nDo not provide general categories or descriptions.
+\nDo not provide any additional information, explanations or examples.
+\n\n"
+    completion_start: "Terms of objects:\n"
+    max_new_tokens: 512
+    temperature: null
+
+  get_action_captions_from_video_clip:
+    # use the exact same captions as LLoVi (provided in their repository, see https://github.com/CeeZh/LLoVi/tree/main)
+    # (please note that we use the caption each second and not every 2 seconds since we want to compare to their main contribution,
+    # i.e. the summarization and qa afterward)
+    pre_inferred_action_captions_path: "/home/wiss/liao/huiyu/ma-nlq-vid-temp-win-3/ma-nlq-vid-temp-win/experiments/extraction_copy/action_caption_w10/action_captions__cogagent_0.9.json"
+    # the following parameters will be ignored since we use the pre-inferred action captions
+    model_name: "LaViLa"
+    modelzoo_dir_path: "./toolbox/lavila_video_captioner/modelzoo"
+    checkpoint_download_url: "https://dl.fbaipublicfiles.com/lavila/checkpoints/narrator"
+    checkpoint: "ckpt_base.pt"
+    resample_rate: 4.0
+    interval_in_seconds: 1
+    temperature: 0.7
+    top_p: 0.95
+    max_new_tokens: 256
+    num_return_sequences: 5
+    early_stopping: true
+    num_seg: 4
+    cuda: true
+
+  # this function is not used in LLoVi-like setup
+  get_temporal_grounding_from_video_clip_and_text:
+    config_dir: "./toolbox/UniVTG/tmp"
+    checkpoint: "./toolbox/UniVTG/results/omni/finetuned/model_best.ckpt"
+    clip_model_version: "ViT-B/32"
+    output_feat_size: 512
+    half_precision: false
+    jit: false
+    resize: 224
+    gpu_id: 0
+
+  get_summary_from_noisy_perceptive_data:
+    # we can use nextqa summaries since they share same videos
+    pre_inferred_summaries_path: null
+    # use the same prompt for summarization as LLoVi uses
+    # not that LLoVi did not run sum + qa experiments with llama-family models, so we use the prompt that LLoVi only
+    # used for ChatGPT here
+    action_caption_prompt_template: "You are given some language descriptions of a first person view video. 
+The video is 180 seconds long. Each sentence describes a 1.0s clip. The descriptions are sequential and non-overlapping 
+which cover the whole video exactly. Here are the descriptions: {interval_text}.\n Please give me a 500 words summary. 
+When doing summarization, remember that your summary will be used to answer this multiple choice question: {question}"
+    # to the best of our knowledge LLoVI does not use a completion start for the summarization task
+    action_caption_completion_start: ""
+    # LLoVi does not use object detections
+    object_detection_prompt_template: ""
+    object_detection_completion_start: ""
+    # LLoVi does not use temporal grounding
+    temporal_grounding_prompt_template: ""
+    temporal_grounding_completion_start: ""
+    max_new_tokens: 4096
+    # try 0.0 temperature, maybe it improves
+    temperature: 0.0
+    no_recursion: false
+    # something big so all data is put in the same chunk --> like LLoVi
+    interval_span: 10000
+    remove_linebreaks: false
+    # do not replace "c" with "the camera wearer" as LLoVi
+    replace_c: false
+
+  get_completion_from_text:
+    # compare https://huggingface.co/blog/llama3#how-to-prompt-llama-3
+    llm_class: "HuggingFaceLLM"
+    llm_name: "meta-llama/Meta-Llama-3-8B-Instruct"
+    # best should be torch.bfloat16
+    precision: 15
+    do_sample: false
+    temperature: 0.0
+    top_p: 0.9
+    max_new_tokens: 1024
+    repetition_penalty: 1.2
+    use_cache: true
+    # use the same system prompt as LLoVi
+    system_prompt: "You are a helpful expert in first person view video analysis."

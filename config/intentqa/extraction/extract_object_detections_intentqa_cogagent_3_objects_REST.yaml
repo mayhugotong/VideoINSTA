@@ -1,0 +1,214 @@
+mode: eval # (train / eval / test)
+experiment_path: "./experiments/extraction/intentqa"
+
+# Path to the secret environment variables (e.g. API keys)
+secret_env: "./.env"
+
+
+# Setup of the logger
+logger:
+  # CRITICAL = 50, ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
+  level: 10
+  format: "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
+
+# Specify the directory of the videos
+videos_path: "./data/intentqa/videos"
+
+# Specify the directory of the tasks (questions and options)
+tasks_path: "./data/intentqa/missing_data_object_detections.csv"
+
+# Specify the directory of the answers (i.e. the ground truths)
+answers_path: "./data/intentqa/missing_data_object_detections.csv"
+
+# Specify the directory of a previous experiment to go on with the inferences
+# (if null, start from scratch)
+resume_path: null
+
+# specify whether to iterate through the videos or tasks (use false for reasoning and true for extraction)
+iterate_through_videos: true
+
+# Specify the sample rate to be used to load the videos (in fps)
+sample_rate: 1.0
+
+
+# random seed
+random_seed: 42
+reset_seed_for_each_function: true
+reset_seed_for_each_video: true
+
+
+# Setup of the VideoINSTA controller
+controller:
+  max_iterations: 1
+
+
+# Specify the params of the state
+state:
+  spatial_clip_state:
+    use_action_captions: false
+    use_action_captions_summary: false
+    use_object_detections: false
+    use_object_detections_summary: false
+  temporal_clip_state:
+    use_foreground: false
+    use_relevance: false
+    use_salience: false
+    use_temporal_grounding_summary: false
+  lexical_representation: "sections" # choose between "sections" and "list"
+
+# Specify the params of the operations that have params
+operations:
+  split:
+    class: "Split"
+    params:
+      num_splits: 1
+  wait:
+    class: "Wait"
+    params: { }
+  merge:
+    class: "Merge"
+    params: { }
+
+  derive_clip_states:
+    class: "DeriveClipStates"
+    params:
+      derive_action_captions: false
+      derive_action_captions_summary: false
+      total_num_words_action_captions_summary: 500
+      min_num_words_action_captions_summary: 20
+      derive_object_detections: false
+      derive_object_detections_summary: false
+      total_num_words_object_detections_summary: 500
+      min_num_words_object_detections_summary: 20
+      derive_temporal_grounding: false
+      derive_temporal_grounding_summary: false
+      total_num_words_temporal_grounding_summary: 500
+      min_num_words_temporal_grounding_summary: 20
+      normalization_video_length: -1
+
+  derive_root_clip_state:
+    class: "DeriveRootClipState"
+    params:
+      derive_action_captions: false
+      derive_action_captions_summary: false
+      num_words_action_captions_summary: 500
+      min_num_words_action_captions_summary: 20
+      derive_object_detections: true
+      derive_object_detections_summary: false
+      num_words_object_detections_summary: 500
+      min_num_words_object_detections_summary: 20
+      derive_temporal_grounding: false
+      derive_temporal_grounding_summary: false
+      num_words_temporal_grounding_summary: 500
+      min_num_words_temporal_grounding_summary: 20
+      normalization_video_length: -1
+
+  ratings:
+    class: "NoRatings"
+    params: { }
+
+  decision:
+    class: "NoDecision"
+    params: { }
+
+  # Specify the params of the conclusion
+  conclusion:
+    class: "NoConclusion"
+    params: { }
+
+api:
+  load_models_only_when_needed: true
+
+  get_object_detections_from_video_clip_and_text:
+    config_file: "./toolbox/GroundingDINO/groundingdino/config/GroundingDINO_SwinB_cfg.py"
+    checkpoint: "./toolbox/GroundingDINO/weights/groundingdino_swinb_cogcoor.pth"
+    box_threshold: 0.0
+    text_threshold: 0.0
+    cuda: true
+
+  get_unspecific_objects_from_video_clip:
+    pre_inferred_object_detections_path: null # we want to infer them here
+    frame_prompt: "You are given an image. Your task is to identify the three main objects in the image. 
+Only identify the objects that are clearly visible in the image and unambiguously recognizable. 
+Do not speculate about objects that are not clearly visible. 
+Find short and precise names for the objects and avoid paraphrasing them. 
+Provide an enumerated list with the three main objects you can clearly identify in the image. 
+\nList of objects:\n"
+    model_id: "THUDM/cogagent-vqa-hf"
+    tokenizer_id: "lmsys/vicuna-7b-v1.5"
+    device: "cuda"
+    precision: "torch.float16"
+    quantization: false
+    max_new_tokens: 512
+    do_sample: false # greedy
+    temperature: 0.0 # will be ignored since do_sample is false
+    num_objects_per_frame: 3
+
+  get_specific_objects_from_video_clip:
+    # leverages get_completion_from_text API function
+    # leverages get_object_detections_from_video_clip_and_text API function
+    prompt_template: "Given:
+\n- a question about a video: {question}
+\n- answer option 0: {option_0}
+\n- answer option 1: {option_1}
+\n- answer option 2: {option_2}
+\n- answer option 3: {option_3}
+\n- answer option 4: {option_4}
+\n\nTask:
+\nI want to identify objects based on that question and its answer options that should be given special attention while watching the video.
+\nThese specific objects should be detectable by an object detection model.
+\nPlease provide an enumerated list of these objects without any speculation about the video content.
+\nMake sure that each item of the list only contains the name of the object.
+\nDo not provide general categories or descriptions.
+\nDo not provide any additional information, explanations or examples.
+\n\n"
+    completion_start: "Terms of objects:\n"
+    max_new_tokens: 512
+    temperature: null
+
+  get_action_captions_from_video_clip:
+    pre_inferred_action_captions_path: null
+    model_name: "CogAgent"
+    frame_prompt: "please describe the event in the image in 10 words"
+    model_id: "THUDM/cogagent-vqa-hf"
+    tokenizer_id: "lmsys/vicuna-7b-v1.5"
+    device: "cuda"
+    precision: "torch.float16"
+    quantization: false
+    temperature: 0.0
+    max_new_tokens: 512
+    do_sample: false
+
+  get_temporal_grounding_from_video_clip_and_text:
+    config_dir: "./toolbox/UniVTG/tmp"
+    checkpoint: "./toolbox/UniVTG/results/omni/finetuned/model_best.ckpt"
+    clip_model_version: "ViT-B/32"
+    output_feat_size: 512
+    half_precision: false
+    jit: false
+    resize: 224
+    gpu_id: 0
+
+  get_action_captions_summary_from_action_captions:
+    pre_inferred_summaries_path: null
+    prompt_template: "You are given some language descriptions of a first person view video. 
+The video is 180 seconds long. Each sentence describes a 1s clip. The descriptions are sequential and non-overlapping 
+which cover the whole video exactly. Here are the descriptions: {interval_text}.\n Please give me a 500 words summary. 
+When doing summarization, remember that your summary will be used to answer this multiple choice question: {question}"
+    completion_start: "" # to the best of our knowledge LLoVI does not use a completion start
+    max_new_tokens: 1024
+    temperature: 1.0 # use default LLM temperature like in LLoVi, compare https://github.com/CeeZh/LLoVi
+    no_recursion: false
+
+  get_completion_from_text:
+    # compare https://huggingface.co/blog/llama3#how-to-prompt-llama-3
+    llm_class: "HuggingFaceLLM"
+    llm_name: "meta-llama/Meta-Llama-3-8B-Instruct"
+    precision: 15 # best should be torch.bfloat16
+    do_sample: false
+    temperature: 0.0
+    top_p: 0.9
+    max_new_tokens: 512
+    repetition_penalty: 1.2
+    use_cache: true
+    system_prompt: "You are a intelligent system."
