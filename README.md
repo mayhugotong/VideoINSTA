@@ -383,13 +383,25 @@ For the results, please refer to the paper.
 If you use our framework or parts of it, please cite our paper:
 
 ```bibtex
-@misc{liao2024videoinstazeroshotlongvideo,
-      title={VideoINSTA: Zero-shot Long Video Understanding via Informative Spatial-Temporal Reasoning with LLMs}, 
-      author={Ruotong Liao and Max Erler and Huiyu Wang and Guangyao Zhai and Gengyuan Zhang and Yunpu Ma and Volker Tresp},
-      year={2024},
-      eprint={2409.20365},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2409.20365}, 
+@inproceedings{liao-etal-2024-videoinsta,
+    title = "{V}ideo{INSTA}: Zero-shot Long Video Understanding via Informative Spatial-Temporal Reasoning with {LLM}s",
+    author = "Liao, Ruotong  and
+      Erler, Max  and
+      Wang, Huiyu  and
+      Zhai, Guangyao  and
+      Zhang, Gengyuan  and
+      Ma, Yunpu  and
+      Tresp, Volker",
+    editor = "Al-Onaizan, Yaser  and
+      Bansal, Mohit  and
+      Chen, Yun-Nung",
+    booktitle = "Findings of the Association for Computational Linguistics: EMNLP 2024",
+    month = nov,
+    year = "2024",
+    address = "Miami, Florida, USA",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2024.findings-emnlp.384",
+    pages = "6577--6602",
+    abstract = "In the video-language domain, recent works in leveraging zero-shot Large Language Model-based reasoning for video understanding have become competitive challengers to previous end-to-end models. However, long video understanding presents unique challenges due to the complexity of reasoning over extended timespans, even for zero-shot LLM-based approaches. The challenge of information redundancy in long videos prompts the question of what specific information is essential for large language models (LLMs) and how to leverage them for complex spatial-temporal reasoning in long-form video analysis. We propose a framework VideoINSTA , i.e. INformative Spatial-TemporAl Reasoning for zero-shot long-form video understanding.VideoINSTA contributes (1) a zero-shot framework for long video understanding using LLMs; (2) an event-based temporalreasoning and content-based spatial reasoning approach for LLMs to reason over spatial-temporal information in videos; (3) a self-reflective information reasoning scheme based on information sufficiency and prediction confidence while balancing temporal factors.Our model significantly improves the state-of-the-art on three long video question-answering benchmarks: EgoSchema, NextQA, and IntentQA, and the open question answering dataset ActivityNetQA. Code is released: https://github.com/mayhugotong/VideoINSTA.",
 }
 ```
