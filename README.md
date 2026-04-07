@@ -371,7 +371,7 @@ For the results, please refer to the paper.
 ## ⭐️ Authors
 
 - [Ruotong Liao](https://mayhugotong.github.io/)
-- [Max Erler](https://www.maxerler.com)
+- [Max Erler](https://www.maxerler.de)
 - Huiyu Wang
 - [Guangyao Zhai](https://ymxlzgy.com/)
 - [Gengyuan Zhang](https://gengyuanmax.github.io/)
